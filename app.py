@@ -13,6 +13,23 @@ model = AutoModelForCausalLM.from_pretrained(
 
 pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
+example_quiz = """
+        {
+          "questions": [
+            {
+              "question": "What is the capital of the state of California?",
+              "options": ["Sacramento", "Los Angeles", "San Francisco", "San Diego"],
+              "answer": "Sacramento"
+            },
+            {
+              "question": "Capital of France?",
+              "options": ["Berlin", "Paris", "Rome", "Madrid"],
+              "answer": "Paris"
+            }
+          ]
+        }
+        """
+
 # -----------------------
 # GPU Inference Function
 # -----------------------
@@ -28,20 +45,7 @@ def generate_quiz(topic: str) -> str:
         The response should formatted as JSON with a question, a list of options, and a correct answer.  
         Do not include any output other than the JSON.
         Here is an example of two questions on the topic of 'capitals':
-        {
-          "questions": [
-            {
-              "question": "What is the capital of the state of California?",
-              "options": ["Sacramento", "Los Angeles", "San Francisco", "San Diego"],
-              "answer": "Sacramento"
-            },
-            {
-              "question": "Capital of France?",
-              "options": ["Berlin", "Paris", "Rome", "Madrid"],
-              "answer": "Paris"
-            }
-          ]
-        }
+        {example_quiz}
     """
     response = pipe(
         prompt,
