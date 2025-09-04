@@ -38,6 +38,8 @@ def generate_quiz(topic: str) -> str:
     print('topic:', topic)
     prompt = f"""
         You are a quiz generator.  You generate multiple-choice quizzes in JSON format.
+        Do not generate code, explanations, or markdown code blocks. 
+        Only return valid JSON.
 
         Write a multiple-choice quiz on the topic of {topic}.
         The quiz should have exactly five questions.
@@ -46,6 +48,7 @@ def generate_quiz(topic: str) -> str:
         
         The response should formatted as JSON with a question, a list of options, and a correct answer.  
         Do not include any output other than the quiz JSON.
+        The response must be a single JSON object that begins with {{ and ends with }}.
         Here is an example of two questions on the topic of 'capitals':
         {example_quiz}
     """
