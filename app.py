@@ -7,7 +7,7 @@ model_id = "openai/gpt-oss-20b"
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_pretrained(
     model_id,
-    torch_dtype="auto",
+    dtype="auto",
     device_map="auto"
 )
 
@@ -37,13 +37,15 @@ example_quiz = """
 def generate_quiz(topic: str) -> str:
     print('topic:', topic)
     prompt = f"""
-        Generate a multiple-choice quiz on the topic of {topic}.
-        There should be exactly five questions.
+        You are a quiz generator.  You generate multiple-choice quizzes in JSON format.
+
+        Write a multiple-choice quiz on the topic of {topic}.
+        The quiz should have exactly five questions.
         Each question should have four options for answers.
         One of the four answer options should be correct.
         
         The response should formatted as JSON with a question, a list of options, and a correct answer.  
-        Do not include any output other than the JSON.
+        Do not include any output other than the quiz JSON.
         Here is an example of two questions on the topic of 'capitals':
         {example_quiz}
     """
@@ -55,6 +57,7 @@ def generate_quiz(topic: str) -> str:
     )
     text = response[0]["generated_text"]
 
+    print('text:', text)
     # Try to extract JSON from the text
     try:
         start = text.index("{")
