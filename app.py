@@ -6,64 +6,6 @@ from quiz_generator import generate_quiz
 # -----------------------
 # Quiz Logic
 # -----------------------
-def build_quiz_components(quiz_json: str):
-    """Build quiz components from JSON string."""
-    print("Parsing quiz JSON...", quiz_json)
-    try:
-        quiz = json.loads(quiz_json)
-    except Exception:
-        return [gr.Markdown("⚠️ Could not parse quiz JSON")], None
-
-    if not quiz.get("questions"):
-        return [gr.Markdown("⚠️ No questions returned by LLM")], None
-
-    print("Populating questions...", quiz.get('questions', []))
-    
-    components = []
-    inputs = []
-    
-    for i, q in enumerate(quiz.get("questions", [])):
-        # Add question text
-        question_text = f"**Q{i+1}: {q['question']}**"
-        components.append(gr.Markdown(question_text))
-        
-        # Create radio buttons with A-D labels
-        options_with_labels = []
-        for j, option in enumerate(q["options"]):
-            options_with_labels.append(f"{chr(65+j)}. {option}")
-        
-        radio = gr.Radio(
-            choices=options_with_labels,
-            label="",
-            type="value"
-        )
-        components.append(radio)
-        inputs.append(radio)
-    
-    return components, inputs, quiz
-
-
-def grade_quiz(*user_answers, quiz=None):
-    """Grade answers against quiz JSON."""
-    if not quiz:
-        return "⚠️ No quiz loaded."
-
-    correct = 0
-    for i, (user_answer, q) in enumerate(zip(user_answers, quiz["questions"])):
-        if not user_answer:
-            continue
-            
-        # Extract the actual answer text from the radio button selection
-        # Format is "A. Answer Text", so we need to get the answer text
-        try:
-            # Find the correct answer in the options
-            correct_answer = q["answer"]
-            if user_answer.endswith(f"{correct_answer}"):
-                correct += 1
-        except:
-            pass
-
-    return f"Your score: {correct} / {len(quiz['questions'])}"
 
 
 # -----------------------
@@ -77,34 +19,89 @@ with gr.Blocks() as demo:
     gen_btn = gr.Button("Generate Quiz")
     quiz_json_box = gr.Textbox(label="Raw Quiz JSON", visible=False)
 
-    # Step 2: Quiz Container (will be populated dynamically)
-    quiz_container = gr.Column()
+    # Step 2: Quiz Display (using a single markdown component)
+    quiz_display = gr.Markdown("Quiz will appear here after generation...")
+    
+    # Step 3: Answer inputs (fixed number of radio buttons)
+    with gr.Row():
+        q1_radio = gr.Radio(choices=[], label="Question 1", visible=False)
+        q2_radio = gr.Radio(choices=[], label="Question 2", visible=False)
+    with gr.Row():
+        q3_radio = gr.Radio(choices=[], label="Question 3", visible=False)
+        q4_radio = gr.Radio(choices=[], label="Question 4", visible=False)
+    with gr.Row():
+        q5_radio = gr.Radio(choices=[], label="Question 5", visible=False)
+    
     submit_btn = gr.Button("Submit Answers", visible=False)
     result_out = gr.Textbox(label="Result")
 
     state_quiz = gr.State()  # to keep parsed quiz JSON
-    state_inputs = gr.State([])  # to keep input components
 
     def handle_generate(prompt):
         quiz_json = generate_quiz(prompt)
-        components, inputs, quiz = build_quiz_components(quiz_json)
-        if quiz and quiz.get("questions"):
-            return quiz_json, components, gr.update(visible=True), quiz, inputs
-        else:
-            return quiz_json, [gr.Markdown("⚠️ No valid questions found.")], gr.update(visible=False), None, []
+        try:
+            quiz = json.loads(quiz_json)
+        except:
+            return quiz_json, "⚠️ Could not parse quiz JSON", gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), None
 
-    def handle_submit(*user_answers):
-        return grade_quiz(*user_answers, quiz=state_quiz.value)
+        if not quiz.get("questions"):
+            return quiz_json, "⚠️ No questions returned by LLM", gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), None
+
+        # Create quiz display
+        quiz_display_text = ""
+        for i, q in enumerate(quiz.get("questions", [])):
+            quiz_display_text += f"**Q{i+1}: {q['question']}**\n\n"
+            for j, option in enumerate(q["options"]):
+                quiz_display_text += f"{chr(65+j)}. {option}\n"
+            quiz_display_text += "\n"
+
+        # Update radio buttons for each question
+        updates = [quiz_json, quiz_display_text, gr.update(visible=True)]
+        
+        # Update radio button choices for each question
+        radio_buttons = [q1_radio, q2_radio, q3_radio, q4_radio, q5_radio]
+        for i, q in enumerate(quiz.get("questions", [])):
+            if i < len(radio_buttons):
+                options_with_labels = [f"{chr(65+j)}. {option}" for j, option in enumerate(q["options"])]
+                updates.append(gr.update(choices=options_with_labels, visible=True))
+            else:
+                updates.append(gr.update(visible=False))
+        
+        # Fill remaining radio buttons as invisible
+        for i in range(len(quiz.get("questions", [])), len(radio_buttons)):
+            updates.append(gr.update(visible=False))
+        
+        updates.append(quiz)
+        return updates
+
+    def handle_submit(q1, q2, q3, q4, q5, quiz):
+        if not quiz:
+            return "⚠️ No quiz loaded."
+        
+        answers = [q1, q2, q3, q4, q5]
+        correct = 0
+        
+        for i, (user_answer, q) in enumerate(zip(answers, quiz["questions"])):
+            if not user_answer:
+                continue
+            try:
+                correct_answer = q["answer"]
+                if user_answer.endswith(f"{correct_answer}"):
+                    correct += 1
+            except:
+                pass
+
+        return f"Your score: {correct} / {len(quiz['questions'])}"
 
     gen_btn.click(
         handle_generate, 
         inputs=prompt_inp, 
-        outputs=[quiz_json_box, quiz_container, submit_btn, state_quiz, state_inputs]
+        outputs=[quiz_json_box, quiz_display, submit_btn, q1_radio, q2_radio, q3_radio, q4_radio, q5_radio, state_quiz]
     )
 
     submit_btn.click(
         handle_submit,
-        inputs=state_inputs,
+        inputs=[q1_radio, q2_radio, q3_radio, q4_radio, q5_radio, state_quiz],
         outputs=result_out,
     )
 
