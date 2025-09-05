@@ -19,18 +19,15 @@ with gr.Blocks() as demo:
     gen_btn = gr.Button("Generate Quiz")
     quiz_json_box = gr.Textbox(label="Raw Quiz JSON", visible=False)
 
-    # Step 2: Quiz Display (using a single markdown component)
-    quiz_display = gr.Markdown("Quiz will appear here after generation...")
-    
-    # Step 3: Answer inputs (fixed number of radio buttons)
+    # Step 2: Answer inputs (fixed number of radio buttons with inline questions)
     with gr.Row():
-        q1_radio = gr.Radio(choices=[], label="Question 1", visible=False)
-        q2_radio = gr.Radio(choices=[], label="Question 2", visible=False)
+        q1_radio = gr.Radio(choices=[], label="", visible=False)
+        q2_radio = gr.Radio(choices=[], label="", visible=False)
     with gr.Row():
-        q3_radio = gr.Radio(choices=[], label="Question 3", visible=False)
-        q4_radio = gr.Radio(choices=[], label="Question 4", visible=False)
+        q3_radio = gr.Radio(choices=[], label="", visible=False)
+        q4_radio = gr.Radio(choices=[], label="", visible=False)
     with gr.Row():
-        q5_radio = gr.Radio(choices=[], label="Question 5", visible=False)
+        q5_radio = gr.Radio(choices=[], label="", visible=False)
     
     submit_btn = gr.Button("Submit Answers", visible=False)
     result_out = gr.Textbox(label="Result")
@@ -42,28 +39,21 @@ with gr.Blocks() as demo:
         try:
             quiz = json.loads(quiz_json)
         except:
-            return quiz_json, "⚠️ Could not parse quiz JSON", gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), None
+            return quiz_json, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), None
 
         if not quiz.get("questions"):
-            return quiz_json, "⚠️ No questions returned by LLM", gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), None
+            return quiz_json, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), None
 
-        # Create quiz display
-        quiz_display_text = ""
-        for i, q in enumerate(quiz.get("questions", [])):
-            quiz_display_text += f"**Q{i+1}: {q['question']}**\n\n"
-            for j, option in enumerate(q["options"]):
-                quiz_display_text += f"{chr(65+j)}. {option}\n"
-            quiz_display_text += "\n"
-
-        # Update radio buttons for each question
-        updates = [quiz_json, quiz_display_text, gr.update(visible=True)]
+        # Update radio buttons for each question with inline question text
+        updates = [quiz_json, gr.update(visible=True)]
         
         # Update radio button choices for each question
         radio_buttons = [q1_radio, q2_radio, q3_radio, q4_radio, q5_radio]
         for i, q in enumerate(quiz.get("questions", [])):
             if i < len(radio_buttons):
                 options_with_labels = [f"{chr(65+j)}. {option}" for j, option in enumerate(q["options"])]
-                updates.append(gr.update(choices=options_with_labels, visible=True))
+                question_label = f"Q{i+1}: {q['question']}"
+                updates.append(gr.update(choices=options_with_labels, label=question_label, visible=True))
             else:
                 updates.append(gr.update(visible=False))
         
@@ -96,7 +86,7 @@ with gr.Blocks() as demo:
     gen_btn.click(
         handle_generate, 
         inputs=prompt_inp, 
-        outputs=[quiz_json_box, quiz_display, submit_btn, q1_radio, q2_radio, q3_radio, q4_radio, q5_radio, state_quiz]
+        outputs=[quiz_json_box, submit_btn, q1_radio, q2_radio, q3_radio, q4_radio, q5_radio, state_quiz]
     )
 
     submit_btn.click(
