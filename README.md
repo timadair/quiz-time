@@ -29,5 +29,6 @@ I wanted my prototype to have 0 setup for the user if at all possible, and HF Sp
 2. Don't try to run an LLM locally on unknown hardware specs.
 3. Don't use my key for a publicly-facing app.
 
-I already have up to 25 minutes of GPU inference per day with my Pro account, so there's no extra expense for me, and the wait for a GPU is minimal.  There's a small risk of a malicious stranger using up all 25 minutes before you guys get to it. 
+I've set the limit for visitors to 300s.  That does mean that the wait for a GPU could be longer, but you'll be able to run more than 1 or 2 trials.
+
 

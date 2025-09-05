@@ -43,11 +43,12 @@ model = AutoModelForCausalLM.from_pretrained(
 
 pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
-@spaces.GPU
+@spaces.GPU(duration=300)
 def run_inference(prompt_message: str):
     """
     @spaces.GPU is a Hugging Face decorator for GPU inference.
     Required for the ZeroGPU setting in HF Spaces.
+    duration=300 allows visitors to use up to 300s of inference.
     See https://huggingface.co/docs/hub/en/spaces-zerogpu
 
     :param prompt_message: The user message submitted to the LLM

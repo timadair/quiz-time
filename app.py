@@ -120,4 +120,4 @@ with gr.Blocks() as demo:
         outputs=result_out,
     )
 
-demo.launch(share=True)
+demo.launch()
