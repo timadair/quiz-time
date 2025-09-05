@@ -26,10 +26,10 @@ prompt = f"""
         One of the four answer options should be correct.      
         
         The response should formatted as JSON with a question, a list of options, and a correct answer.  
-        Do not include any output other than the quiz JSON.  Do not generate code, explanations, or markdown code blocks.
+        Do not include any output after "Final Answer:" other than the quiz JSON.  Do not generate code, explanations, or markdown code blocks.
         The response must be a single valid JSON object that begins with {{ and ends with }}.  
         This is an example response of a quiz with two questions on the topic of 'capitals':
-        {example_quiz}
+        Final Answer:{example_quiz}
     """
 
 model_id = "openai/gpt-oss-20b"
@@ -57,9 +57,29 @@ def generate_quiz(topic: str) -> str:
         temperature=0.7,
         do_sample=True,
     )
-    text = response[0]["generated_text"]
+    
+    # Process responses to find "Final Answer:" and concatenate subsequent text
+    final_answer_text = ""
+    found_final_answer = False
+    
+    for resp in response:
+        generated_text = resp["generated_text"]
+        print('generated_text:', generated_text)
+        
+        if found_final_answer:
+            # Concatenate all text after "Final Answer:" is found
+            final_answer_text += generated_text
+        elif "Final Answer:" in generated_text:
+            # Find the position of "Final Answer:" and get everything after it
+            final_answer_pos = generated_text.find("Final Answer:")
+            if final_answer_pos != -1:
+                final_answer_text = generated_text[final_answer_pos + len("Final Answer:"):]
+                found_final_answer = True
 
-    print('text:', text)
+    # Use the concatenated text from "Final Answer:" onwards
+    text = final_answer_text.strip()
+
+    print('final text:', text)
     # Try to extract JSON from the text
     try:
         start = text.index("{")
