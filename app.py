@@ -66,18 +66,33 @@ with gr.Blocks() as demo:
         
         answers = [q1, q2, q3, q4, q5]
         correct = 0
+        feedback = []
         
         for i, (user_answer, q) in enumerate(zip(answers, quiz["questions"])):
             if not user_answer:
+                feedback.append(f"Q{i+1}: ❌ No answer selected")
                 continue
+                
             try:
                 correct_answer = q["answer"]
                 if user_answer.endswith(f"{correct_answer}"):
                     correct += 1
+                    feedback.append(f"Q{i+1}: ✅ Correct! ({user_answer})")
+                else:
+                    # Find the correct option letter
+                    correct_letter = None
+                    for j, option in enumerate(q["options"]):
+                        if option == correct_answer:
+                            correct_letter = chr(65+j)
+                            break
+                    feedback.append(f"Q{i+1}: ❌ Incorrect. You chose {user_answer}, correct answer is {correct_letter}. {correct_answer}")
             except:
-                pass
+                feedback.append(f"Q{i+1}: ❌ Error processing answer")
 
-        return f"Your score: {correct} / {len(quiz['questions'])}"
+        score_text = f"Your score: {correct} / {len(quiz['questions'])}"
+        feedback_text = "\n".join(feedback)
+        
+        return f"{score_text}\n\n{feedback_text}"
 
     gen_btn.click(
         handle_generate, 
