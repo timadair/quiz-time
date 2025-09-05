@@ -43,38 +43,61 @@ model = AutoModelForCausalLM.from_pretrained(
 
 pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
-# -----------------------
-# Hugging Face annotation for GPU inference
-# 
-# -----------------------
 @spaces.GPU
-def run_inference(prompt: str):
+def run_inference(prompt_message: str):
+    """
+    @spaces.GPU is a Hugging Face decorator for GPU inference.
+    Required for ZeroGPU setting in HF Spaces.
+    See https://huggingface.co/docs/hub/en/spaces-zerogpu
+
+    :param prompt_message: The user message submitted to the LLM
+    :return: All messages returned by the LLM
+    """
     return pipe(
-        prompt,
+        prompt_message,
         max_new_tokens=1000,
         temperature=0.7,
         do_sample=True,
     )
 
+def to_final_answer(response):
+    """
+    Isolates the JSON of the final answer in the LLMs response.
+    There's not a token that gpt-oss-20b returns reliably enough to indicate it's done,
+    so the best bet is to find the last instance of the first key in the JSON and add the starting '{' back on.
+
+    Shouldn't be necessary if I change to using a LlamaIndex agent to enable tool use.
+    """
+    first_json_key = '"questions":'
+
+    # Concatenate all generated text and keep only content after the final "questions":
+    all_generated = "".join(resp["generated_text"] for resp in response)
+    print('all_generated:', all_generated)
+    last_marker_idx = all_generated.rfind(first_json_key)
+    if last_marker_idx != -1:
+        text = "{" + all_generated[last_marker_idx:].strip()
+    else:
+        # Fallback: use the last response's text
+        text = response[-1]["generated_text"].strip()
+    return text
+
+
 def generate_quiz(topic: str) -> str:
+    f"""
+    Synchronously generates a multiple-choice quiz with 5 questions from the given topic using LLM inference.
+    Rather slow since the gpt-oss-20B does a lot of thinking.
+    TODO Possible enhancement: return a LlamaIndex Handler if the user wants to see CoT happening real-time.
+    :param topic: The topic of the quiz
+    :return: JSON in the format of {example_quiz}
+    """
     print('topic:', topic)
-    # Check for empty or null topic
     if not topic or not topic.strip():
         return '{"questions": []}'
 
     message = prompt + f"\nCreate a quiz with five questions and the topic {topic}."
     response = run_inference(message)
-    
-    # Concatenate all generated text and keep only content after the final "questions":
-    all_generated = "".join(resp["generated_text"] for resp in response)
-    print('all_generated:', all_generated)
-    last_marker_idx = all_generated.rfind("\"questions\":")
-    if last_marker_idx != -1:
-        text = all_generated[last_marker_idx:].strip()
-    else:
-        # Fallback: use the last response's text
-        text = response[-1]["generated_text"].strip()
-    text = "{" + text
+
+    text = to_final_answer(response)
 
     print('final text:', text)
     # Try to extract JSON from the text
