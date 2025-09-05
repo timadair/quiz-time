@@ -8,6 +8,7 @@ from quiz_generator import generate_quiz
 # -----------------------
 def build_quiz_ui(quiz_json: str):
     """Build quiz UI dynamically from JSON string."""
+    print("Parsing quiz JSON...", quiz_json)
     try:
         quiz = json.loads(quiz_json)
     except Exception:
@@ -16,6 +17,7 @@ def build_quiz_ui(quiz_json: str):
     inputs = []
     components = []
 
+    print("Populating questions...", quiz.get('questions', []))
     with gr.Column() as col:
         for i, q in enumerate(quiz.get("questions", [])):
             components.append(gr.Markdown(f"**Q{i+1}: {q['question']}**"))
@@ -58,6 +60,7 @@ with gr.Blocks() as demo:
         return generate_quiz(prompt)
 
     def handle_build(quiz_json):
+        print("Building quiz...", quiz_json)
         col, inputs, quiz = build_quiz_ui(quiz_json)
         if quiz and quiz.get("questions"):
             return col, gr.update(visible=True), quiz
