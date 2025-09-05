@@ -92,7 +92,7 @@ def generate_quiz(topic: str) -> str:
     """
     print('topic:', topic)
     if not topic or not topic.strip():
-        return '{"questions": []}'
+        return f'{"Inference not run": "No valid topic"}'
 
     message = prompt + f"\nCreate a quiz with five questions and the topic {topic}."
     response = run_inference(message)
@@ -109,4 +109,4 @@ def generate_quiz(topic: str) -> str:
         json.loads(quiz_json)
         return quiz_json
     except Exception:
-        return '{"questions": []}'
+        return "Could not extract a complete JSON object.  Try again!"
