@@ -16,6 +16,8 @@ short_description: Use an LLM to generate a multiple choice quiz
 ## How to Deploy
 No need.  It's hosted in a Hugging Face (HF) Space at the URL I included in my e-mail.
 
+(Unfortunately, the time limits for visitors don't work like I assumed they would, so you'll likely only get a few tries before you hit your daily limit.  I can demo it in-person if the LLM doesn't produce a usable quiz in the time you have and if you still want to invite me for the next round.)
+
 ## Architecture and AI Tool choices
 
 ### Gradio UI w/ gpt-oss-20B and no workflow framework
@@ -28,7 +30,4 @@ I wanted my prototype to have 0 setup for the user if at all possible, and HF Sp
 1. Don't make the user have to sign up and generate and register a key for anything.
 2. Don't try to run an LLM locally on unknown hardware specs.
 3. Don't use my key for a publicly-facing app.
-
-I've set the limit for visitors to the maximum, 120s.  That does mean that the wait for a GPU could be longer, but you'll be able to run more than 1 or 2 trials.
-
 
