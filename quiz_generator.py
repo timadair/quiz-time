@@ -43,20 +43,23 @@ model = AutoModelForCausalLM.from_pretrained(
 
 pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
-
 # -----------------------
-# GPU Inference Function
+# Hugging Face annotation for GPU inference
+# 
 # -----------------------
 @spaces.GPU
-def generate_quiz(topic: str) -> str:
-    print('topic:', topic)
-    message = prompt + f"\nCreate a quiz with five questions and the topic {topic}."
-    response = pipe(
-        message,
+def run_inference(prompt: str):
+    return pipe(
+        prompt,
         max_new_tokens=1000,
         temperature=0.7,
         do_sample=True,
     )
+
+def generate_quiz(topic: str) -> str:
+    print('topic:', topic)
+    message = prompt + f"\nCreate a quiz with five questions and the topic {topic}."
+    response = run_inference(message)
     
     # Concatenate all generated text and keep only content after the final "questions":
     all_generated = "".join(resp["generated_text"] for resp in response)
