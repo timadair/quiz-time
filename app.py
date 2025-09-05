@@ -58,15 +58,16 @@ def generate_quiz(topic: str) -> str:
         do_sample=True,
     )
     
-    # Concatenate all generated text and keep only content after the final "Final Answer:"
+    # Concatenate all generated text and keep only content after the final "questions":
     all_generated = "".join(resp["generated_text"] for resp in response)
     print('all_generated:', all_generated)
-    last_marker_idx = all_generated.rfind("Final Answer:")
+    last_marker_idx = all_generated.rfind("\"questions\":")
     if last_marker_idx != -1:
-        text = all_generated[last_marker_idx + len("Final Answer:"):].strip()
+        text = all_generated[last_marker_idx:].strip()
     else:
         # Fallback: use the last response's text
         text = response[-1]["generated_text"].strip()
+    text = "{\n\t" + text
 
     print('final text:', text)
     # Try to extract JSON from the text
@@ -74,6 +75,8 @@ def generate_quiz(topic: str) -> str:
         start = text.index("{")
         end = text.rindex("}") + 1
         quiz_json = text[start:end]
+        # Validate JSON before returning
+        json.loads(quiz_json)
         return quiz_json
     except Exception:
         return '{"questions": []}'
