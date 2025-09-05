@@ -29,6 +29,6 @@ I wanted my prototype to have 0 setup for the user if at all possible, and HF Sp
 2. Don't try to run an LLM locally on unknown hardware specs.
 3. Don't use my key for a publicly-facing app.
 
-I've set the limit for visitors to 300s.  That does mean that the wait for a GPU could be longer, but you'll be able to run more than 1 or 2 trials.
+I've set the limit for visitors to the maximum, 120s.  That does mean that the wait for a GPU could be longer, but you'll be able to run more than 1 or 2 trials.
 
 
