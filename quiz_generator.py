@@ -58,6 +58,10 @@ def run_inference(prompt: str):
 
 def generate_quiz(topic: str) -> str:
     print('topic:', topic)
+    # Check for empty or null topic
+    if not topic or not topic.strip():
+        return '{"questions": []}'
+
     message = prompt + f"\nCreate a quiz with five questions and the topic {topic}."
     response = run_inference(message)
     
