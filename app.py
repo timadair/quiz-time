@@ -58,26 +58,15 @@ def generate_quiz(topic: str) -> str:
         do_sample=True,
     )
     
-    # Process responses to find "Final Answer:" and concatenate subsequent text
-    final_answer_text = ""
-    found_final_answer = False
-    
-    for resp in response:
-        generated_text = resp["generated_text"]
-        print('generated_text:', generated_text)
-        
-        if found_final_answer:
-            # Concatenate all text after "Final Answer:" is found
-            final_answer_text += generated_text
-        elif "Final Answer:" in generated_text:
-            # Find the position of "Final Answer:" and get everything after it
-            final_answer_pos = generated_text.find("Final Answer:")
-            if final_answer_pos != -1:
-                final_answer_text = generated_text[final_answer_pos + len("Final Answer:"):]
-                found_final_answer = True
-
-    # Use the concatenated text from "Final Answer:" onwards
-    text = final_answer_text.strip()
+    # Concatenate all generated text and keep only content after the final "Final Answer:"
+    all_generated = "".join(resp["generated_text"] for resp in response)
+    print('all_generated:', all_generated)
+    last_marker_idx = all_generated.rfind("Final Answer:")
+    if last_marker_idx != -1:
+        text = all_generated[last_marker_idx + len("Final Answer:"):].strip()
+    else:
+        # Fallback: use the last response's text
+        text = response[-1]["generated_text"].strip()
 
     print('final text:', text)
     # Try to extract JSON from the text
