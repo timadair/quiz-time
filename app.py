@@ -2,12 +2,6 @@ import gradio as gr
 import json
 from quiz_generator import generate_quiz
 
-
-# -----------------------
-# Quiz Logic
-# -----------------------
-
-
 # -----------------------
 # Gradio App
 # -----------------------
@@ -17,7 +11,7 @@ with gr.Blocks() as demo:
     # Step 1: Prompt for quiz
     prompt_inp = gr.Textbox(label="Quiz Topic", placeholder="Capitals, Telomeres, Van Gogh")
     gen_btn = gr.Button("Generate Quiz")
-    quiz_json_box = gr.Textbox(label="Raw Quiz JSON", visible=False)
+    quiz_json_box = gr.Textbox(label="Raw Quiz JSON", visible=True)
 
     # Step 2: Answer inputs (fixed number of radio buttons with inline questions)
     with gr.Row():
@@ -39,10 +33,10 @@ with gr.Blocks() as demo:
         try:
             quiz = json.loads(quiz_json)
         except:
-            return quiz_json, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), None
+            return quiz_json, gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), None
 
         if not quiz.get("questions"):
-            return quiz_json, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), None
+            return quiz_json, gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), None
 
         # Update radio buttons for each question with inline question text
         updates = [quiz_json, gr.update(visible=True)]
@@ -61,6 +55,8 @@ with gr.Blocks() as demo:
         for i in range(len(quiz.get("questions", [])), len(radio_buttons)):
             updates.append(gr.update(visible=False))
         
+        # Hide the JSON box after successful generation
+        updates.append(gr.update(value=quiz_json, visible=False))
         updates.append(quiz)
         return updates
 
@@ -86,7 +82,7 @@ with gr.Blocks() as demo:
     gen_btn.click(
         handle_generate, 
         inputs=prompt_inp, 
-        outputs=[quiz_json_box, submit_btn, q1_radio, q2_radio, q3_radio, q4_radio, q5_radio, state_quiz]
+        outputs=[quiz_json_box, submit_btn, q1_radio, q2_radio, q3_radio, q4_radio, q5_radio, quiz_json_box, state_quiz]
     )
 
     submit_btn.click(
