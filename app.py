@@ -3,26 +3,16 @@ import json
 import spaces
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 
-model_id = "openai/gpt-oss-20b"
-tokenizer = AutoTokenizer.from_pretrained(model_id)
-model = AutoModelForCausalLM.from_pretrained(
-    model_id,
-    dtype="auto",
-    device_map="auto"
-)
-
-pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
-
 example_quiz = """
         {
           "questions": [
             {
-              "question": "What is the capital of the state of California?",
+              "question": "What is the capital of California?",
               "options": ["Sacramento", "Los Angeles", "San Francisco", "San Diego"],
               "answer": "Sacramento"
             },
             {
-              "question": "Capital of France?",
+              "question": "What is the capital of France?",
               "options": ["Berlin", "Paris", "Rome", "Madrid"],
               "answer": "Paris"
             }
@@ -30,31 +20,40 @@ example_quiz = """
         }
         """
 
+prompt = f"""
+        You are a quiz writer.  You create questions and answers for multiple-choice quizzes structured in JSON.
+        Each question should have four options for answers.
+        One of the four answer options should be correct.      
+        
+        The response should formatted as JSON with a question, a list of options, and a correct answer.  
+        Do not include any output other than the quiz JSON.  Do not generate code, explanations, or markdown code blocks.
+        The response must be a single valid JSON object that begins with {{ and ends with }}.  
+        This is an example response of a quiz with two questions on the topic of 'capitals':
+        {example_quiz}
+    """
+
+model_id = "openai/gpt-oss-20b"
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    dtype="auto",
+    device_map="auto",
+)
+
+pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
+
+
 # -----------------------
 # GPU Inference Function
 # -----------------------
 @spaces.GPU
 def generate_quiz(topic: str) -> str:
     print('topic:', topic)
-    prompt = f"""
-        You are a quiz generator.  You generate multiple-choice quizzes in JSON format.
-        Do not generate code, explanations, or markdown code blocks. 
-        Only return valid JSON.
-
-        Write a multiple-choice quiz on the topic of {topic}.
-        The quiz should have exactly five questions.
-        Each question should have four options for answers.
-        One of the four answer options should be correct.
-        
-        The response should formatted as JSON with a question, a list of options, and a correct answer.  
-        Do not include any output other than the quiz JSON.
-        The response must be a single JSON object that begins with {{ and ends with }}.
-        Here is an example of two questions on the topic of 'capitals':
-        {example_quiz}
-    """
+    message = prompt + f"\nCreate a quiz with five questions and the topic {topic}."
     response = pipe(
-        prompt,
-        max_new_tokens=500,
+        message,
+        max_new_tokens=1000,
         temperature=0.7,
         do_sample=True,
     )
@@ -123,8 +122,7 @@ with gr.Blocks() as demo:
     state_quiz = gr.State()  # to keep parsed quiz JSON
 
     def handle_generate(prompt):
-        quiz_json = generate_quiz(prompt)
-        return quiz_json
+        return generate_quiz(prompt)
 
     def handle_build(quiz_json):
         col, inputs, quiz = build_quiz_ui(quiz_json)
@@ -144,7 +142,6 @@ with gr.Blocks() as demo:
         fn=grade_quiz,
         inputs=[],
         outputs=result_out,
-        show_progress=True,
         preprocess=False,
         postprocess=False,
     )
