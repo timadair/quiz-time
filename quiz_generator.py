@@ -47,7 +47,7 @@ pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 def run_inference(prompt_message: str):
     """
     @spaces.GPU is a Hugging Face decorator for GPU inference.
-    Required for ZeroGPU setting in HF Spaces.
+    Required for the ZeroGPU setting in HF Spaces.
     See https://huggingface.co/docs/hub/en/spaces-zerogpu
 
     :param prompt_message: The user message submitted to the LLM
@@ -92,7 +92,7 @@ def generate_quiz(topic: str) -> str:
     """
     print('topic:', topic)
     if not topic or not topic.strip():
-        return f'{"Inference not run": "No valid topic"}'
+        return '{"Inference not run": "No valid topic"}'
 
     message = prompt + f"\nCreate a quiz with five questions and the topic {topic}."
     response = run_inference(message)
