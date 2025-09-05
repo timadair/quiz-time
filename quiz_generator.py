@@ -43,7 +43,7 @@ model = AutoModelForCausalLM.from_pretrained(
 
 pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
-@spaces.GPU(duration=120)
+@spaces.GPU(duration=45)
 def run_inference(prompt_message: str):
     """
     @spaces.GPU is a Hugging Face decorator for GPU inference.
