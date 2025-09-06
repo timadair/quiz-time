@@ -19,10 +19,11 @@ example_quiz = """
         }
         """
 
-prompt = f"""
+system_prompt = f"""
         You are a quiz writer.  You create questions and answers for multiple-choice quizzes structured in JSON.
         Each question should have four options for answers.
-        One of the four answer options should be correct.      
+        One of the four answer options should be correct. 
+        Reasoning: low     
         
         The response should formatted as JSON with a question, a list of options, and a correct answer.  
         Do not include any output after "Final Answer:" other than the quiz JSON.  Do not generate code, explanations, or markdown code blocks.
@@ -44,19 +45,19 @@ model = AutoModelForCausalLM.from_pretrained(
 pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
 @spaces.GPU(duration=45)
-def run_inference(prompt_message: str):
+def run_inference(prompt_messages):
     """
     @spaces.GPU is a Hugging Face decorator for GPU inference.
     Required for the ZeroGPU setting in HF Spaces.
-    duration=300 allows visitors to use up to 300s of inference.
+    duration is the expected duration of the inference.  duration=45 allows visitors with up to 45s of remaining ZeroGPU inference time for the day to use the space.
     See https://huggingface.co/docs/hub/en/spaces-zerogpu
 
-    :param prompt_message: The user message submitted to the LLM
+    :param prompt_messages: The system and user messages submitted to the LLM
     :return: All messages returned by the LLM
     """
     return pipe(
-        prompt_message,
-        max_new_tokens=1000,
+        prompt_messages,
+        max_new_tokens=1500,
         temperature=0.7,
         do_sample=True,
     )
@@ -64,22 +65,29 @@ def run_inference(prompt_message: str):
 def to_final_answer(response):
     """
     Isolates the JSON of the final answer in the LLMs response.
-    There's not a token that gpt-oss-20b returns reliably enough to indicate it's done,
+    May not be true: There's not a token that gpt-oss-20b returns reliably enough to indicate it's done,
     so the best bet is to find the last instance of the first key in the JSON and add the starting '{' back on.
 
     Shouldn't be necessary if I change to using a LlamaIndex agent to enable tool use.
+
+    Final correction: 
+    gpt-oss-20b has used the token "assistantfinal" pretty consistently today.  I also see it come up in web searches.  
+    It might be a good stop token if it continues.
     """
     first_json_key = '"questions":'
 
-    # Concatenate all generated text and keep only content after the final "questions":
-    all_generated = "".join(resp["generated_text"] for resp in response)
-    print('all_generated:', all_generated)
-    last_marker_idx = all_generated.rfind(first_json_key)
+    # Code from https://huggingface.co/docs/transformers/en/conversations#textgenerationpipeline
+    # The assistant response is always the last in the generated_text array, so -1.
+    assistant_response = response[0]["generated_text"][-1]["content"]
+
+    print('all_generated:', assistant_response)
+    last_marker_idx = assistant_response.rfind(first_json_key)
     if last_marker_idx != -1:
-        text = "{" + all_generated[last_marker_idx:].strip()
+        text = "{" + assistant_response[last_marker_idx:].strip()
     else:
         # Fallback: use the last response's text
         text = response[-1]["generated_text"].strip()
+    print('final text:', text)
     return text
 
 
@@ -94,13 +102,14 @@ def generate_quiz(topic: str) -> str:
     print('topic:', topic)
     if not topic or not topic.strip():
         return '{"Inference not run": "No valid topic"}'
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Create a quiz with five questions and the topic {topic}.  Your final answer must be a parseable JSON object."},
+    ]
 
-    message = prompt + f"\nCreate a quiz with five questions and the topic {topic}."
-    response = run_inference(message)
-
+    response = run_inference(messages)
     text = to_final_answer(response)
 
-    print('final text:', text)
     # Try to extract JSON from the text
     try:
         start = text.index("{")
